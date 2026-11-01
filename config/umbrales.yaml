@@ -1,0 +1,50 @@
+pose:
+  modelo: models/pose_landmarker_heavy.task
+  num_poses: 3
+  min_pose_detection_confidence: 0.5
+  min_pose_presence_confidence: 0.5
+  vis_min: 0.5                 # landmark utilizable
+  vis_confiable: 0.7           # por debajo -> bandera baja_visibilidad
+
+angulos:
+  cuello_offset_neutro_deg: 0           # SUPUESTO: calibrar con una foto en postura neutra
+  umbral_discrepancia_3d_deg: 15        # SUPUESTO
+  umbral_pie_levantado: 0.10            # fracción del largo de pierna; SUPUESTO
+  margen_umbral_deg: 5                  # bandera cerca_de_umbral
+
+reba:                                   # REBA (Hignett y McAtamney, 2000)
+  limite_superior_inclusivo: true       # SUPUESTO: confirmar con Jabil
+  tolerancia_neutro_deg: 5              # "erguido"; SUPUESTO: confirmar con Jabil
+  tronco: {leve: 20, moderado: 60}
+  cuello: {flexion: 20}
+  brazo: {neutro: 20, medio: 45, alto: 90}
+  antebrazo: {min: 60, max: 100}
+  muneca: {flexion: 15}
+  rodilla: {leve: 30, alta: 60}
+  carga_kg: {baja: 5, alta: 10}
+  umbral_torsion_tronco_deg: 20         # Excel Jabil 00014, hoja EAWS (torsión >= 20° suma); REBA no da número
+  umbral_inclinacion_lateral_tronco_deg: 10   # SUPUESTO: confirmar con Jabil
+  umbral_cuello_lateral_rotacion_deg: 10      # SUPUESTO: confirmar con Jabil
+  umbral_abduccion_brazo_deg: 20              # SUPUESTO: confirmar con Jabil
+  lado_reportado: peor                        # SUPUESTO: confirmar con Jabil
+
+jabil:
+  angulo_apertura: null                 # PENDIENTE: estudio de Jabil, se pide el 28 oct
+
+rula:                                   # RULA (McAtamney y Corlett, 1993)
+  limite_superior_inclusivo: true       # SUPUESTO: confirmar con Jabil
+  brazo: {neutro: 20, medio: 45, alto: 90}
+  antebrazo: {min: 60, max: 100}
+  muneca: {neutro: 0, flexion: 15}
+  cuello: {neutro: 10, medio: 20}
+  tronco: {neutro: 0, leve: 20, moderado: 60}
+  carga_kg: {baja: 2, alta: 10}
+
+eaws:                                   # Excel Jabil 00014, hoja EAWS
+  tronco: {leve: 20, moderado: 45}
+  torsion_deg: 20
+  carga_kg: {baja: 5, alta: 10}
+  acciones: {baja: 100, alta: 500}
+
+mano:
+  modelo: models/hand_landmarker.task   # SUPUESTO: descargar y validar antes de adoptar
