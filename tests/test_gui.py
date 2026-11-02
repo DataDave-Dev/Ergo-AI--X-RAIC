@@ -32,6 +32,9 @@ class _Variable:
     def set(self, valor: str) -> None:
         self.valor = valor
 
+    def get(self) -> str:
+        return self.valor
+
 
 def test_error_en_segundo_plano_se_muestra_y_rehabilita_boton(monkeypatch, tmp_path: Path) -> None:
     app = object.__new__(gui.AplicacionErgoAI)
@@ -51,3 +54,39 @@ def test_error_en_segundo_plano_se_muestra_y_rehabilita_boton(monkeypatch, tmp_p
     assert errores == [("Error durante el análisis", "Ejecuta scripts/descargar_modelo.py")]
     assert app.boton_evaluar.estado == "normal"
     assert app.estado.valor == "La evaluación no pudo completarse."
+
+
+def test_actualizar_vista_reemplaza_imagen_anterior(monkeypatch, tmp_path: Path) -> None:
+    destino = tmp_path / "data" / "casos" / "caso01"
+    destino.mkdir(parents=True)
+    (destino / "frente.jpg").write_bytes(b"vieja")
+    (destino / "costado.jpg").write_bytes(b"costado")
+    nueva = tmp_path / "foto.png"
+    nueva.write_bytes(b"nueva")
+    app = object.__new__(gui.AplicacionErgoAI)
+    app.raiz = tmp_path
+    app.archivos = {vista: _Variable() for vista in ("frente", "costado", "aerea")}
+    app.archivos["frente"].set(str(nueva))
+    monkeypatch.setattr(app, "_contexto", lambda: {"caso_id": "caso01"}, raising=False)
+    monkeypatch.setattr(gui.messagebox, "askyesno", lambda *argumentos: True)
+
+    app._preparar_caso()
+
+    assert sorted(ruta.name for ruta in destino.iterdir()) == ["contexto.json", "costado.jpg", "frente.png"]
+    assert (destino / "frente.png").read_bytes() == b"nueva"
+
+
+def test_foto_precargada_del_caso_no_se_borra(monkeypatch, tmp_path: Path) -> None:
+    destino = tmp_path / "data" / "casos" / "caso01"
+    destino.mkdir(parents=True)
+    (destino / "frente.JPG").write_bytes(b"original")
+    app = object.__new__(gui.AplicacionErgoAI)
+    app.raiz = tmp_path
+    app.archivos = {vista: _Variable() for vista in ("frente", "costado", "aerea")}
+    app.archivos["frente"].set(str(destino / "frente.JPG"))
+    monkeypatch.setattr(app, "_contexto", lambda: {"caso_id": "caso01"}, raising=False)
+    monkeypatch.setattr(gui.messagebox, "askyesno", lambda *argumentos: True)
+
+    app._preparar_caso()
+
+    assert (destino / "frente.JPG").read_bytes() == b"original"

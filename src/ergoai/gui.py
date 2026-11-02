@@ -13,7 +13,7 @@ from typing import Any
 
 from PIL import Image, ImageTk
 
-from .cli import ejecutar_evaluar
+from .cli import ejecutar_evaluar, imagenes_de_vista
 
 
 class AplicacionErgoAI:
@@ -87,11 +87,9 @@ class AplicacionErgoAI:
 
     def _cargar_caso(self, caso: Path) -> None:
         for vista in self.archivos:
-            for extension in (".jpg", ".jpeg", ".png", ".JPG", ".JPEG", ".PNG"):
-                candidata = caso / f"{vista}{extension}"
-                if candidata.exists():
-                    self.archivos[vista].set(str(candidata))
-                    break
+            imagenes = imagenes_de_vista(caso, vista)
+            if imagenes:
+                self.archivos[vista].set(str(imagenes[0]))
 
     def _contexto(self) -> dict[str, Any]:
         try:
@@ -126,6 +124,11 @@ class AplicacionErgoAI:
             raise RuntimeError("Operación cancelada.")
         destino.mkdir(parents=True, exist_ok=True)
         for vista, origen in seleccionadas.items():
+            anteriores = imagenes_de_vista(destino, vista)
+            if origen.resolve() in [anterior.resolve() for anterior in anteriores]:
+                continue  # La foto elegida ya es la del caso (precargada con --caso).
+            for anterior in anteriores:
+                anterior.unlink()
             shutil.copy2(origen, destino / f"{vista}{origen.suffix.lower()}")
         (destino / "contexto.json").write_text(json.dumps(contexto, ensure_ascii=False, indent=2), encoding="utf-8")
         return destino

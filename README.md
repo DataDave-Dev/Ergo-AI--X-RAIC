@@ -40,7 +40,7 @@ uv run ergoai-gui
 
 ### Línea de comandos
 
-Prepara un caso en `data/casos/<caso_id>/` con imágenes llamadas `frente`, `costado` y/o `aerea`, más un `contexto.json`.
+Prepara un caso en `data/casos/<caso_id>/` con imágenes llamadas `frente`, `costado` y/o `aerea`, más un `contexto.json`. Cada vista lleva una sola imagen `.jpg`, `.jpeg` o `.png` (sin importar mayúsculas); si hay dos, por ejemplo `frente.jpg` y `frente.png`, la evaluación se detiene y pide dejar una. Al actualizar un caso desde la interfaz, la foto nueva reemplaza la anterior de esa vista.
 
 ```powershell
 # Solo landmarks y esqueleto

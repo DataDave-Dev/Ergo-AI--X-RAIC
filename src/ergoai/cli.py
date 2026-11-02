@@ -14,7 +14,7 @@ from .pose import MediaPipeBackend, PoseBackend
 from .reba import MEDIDAS_REBA_POR_LADO, MEDIDAS_REBA_UNICAS, calcular_reba, clave_reba
 
 VISTAS = ("frente", "costado", "aerea")
-EXTENSIONES_IMAGEN = (".jpg", ".jpeg", ".png", ".JPG", ".JPEG", ".PNG")
+EXTENSIONES_IMAGEN = (".jpg", ".jpeg", ".png")
 
 
 def _area_visible(persona: PoseResult, vis_min: float) -> float:
@@ -66,12 +66,22 @@ def procesar_vista(
     )
 
 
+def imagenes_de_vista(caso: Path, vista: str) -> list[Path]:
+    """Imágenes del caso para una vista, sin distinguir mayúsculas en nombre ni extensión."""
+
+    if not caso.is_dir():
+        return []
+    return sorted(
+        ruta for ruta in caso.iterdir()
+        if ruta.is_file() and ruta.stem.lower() == vista and ruta.suffix.lower() in EXTENSIONES_IMAGEN
+    )
+
+
 def _ruta_vista(caso: Path, vista: str) -> Path | None:
-    for extension in EXTENSIONES_IMAGEN:
-        candidata = caso / f"{vista}{extension}"
-        if candidata.is_file():
-            return candidata
-    return None
+    imagenes = imagenes_de_vista(caso, vista)
+    if len(imagenes) > 1:
+        raise ValueError(f"{caso}: hay más de una imagen para la vista {vista} ({', '.join(ruta.name for ruta in imagenes)}); deja solo una.")
+    return imagenes[0] if imagenes else None
 
 
 def _cargar_contexto(caso: Path) -> dict[str, Any]:
