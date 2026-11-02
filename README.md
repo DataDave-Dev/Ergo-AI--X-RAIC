@@ -55,6 +55,11 @@ uv run python -m ergoai.cli evaluar data/casos/caso01
 
 En `contexto.json`, `overrides` declara valores del especialista en grados (p. ej. `{"tronco_flexion": 35}`). Reemplazan la medición automática, que se conserva en `valor_medido_deg`, y también completan medidas de una vista ausente: con `"tronco_torsion": 25` y sin foto aérea, la torsión entra en `angulos` con `vista: null` y deja de ser pendiente. En medidas por lado, `codo_flexion` aplica a ambos lados y `codo_flexion_R` tiene prioridad para el derecho.
 
+Claves válidas de `overrides` (una clave desconocida o un valor no numérico detiene la evaluación):
+
+- Únicas: `tronco_flexion`, `cuello_flexion`, `tronco_torsion`, `tronco_inclinacion_lateral`, `cuello_inclinacion_rotacion`, `apoyo_piernas_unilateral` (0 o 1).
+- Por lado, sin sufijo o con `_L`/`_R`: `rodilla_flexion`, `brazo_flexion`, `codo_flexion`, `muneca_flexion_extension`, `brazo_abduccion`.
+
 La anotación manual y la evaluación de precisión se ejecutan localmente:
 
 ```powershell

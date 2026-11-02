@@ -189,15 +189,26 @@ def _override(overrides: dict[str, Any], medida: str, lado: str | None) -> float
     """Valor del especialista; la clave con lado tiene prioridad sobre la genérica."""
 
     for candidato in (clave_reba(medida, lado), medida):
-        valor = overrides.get(candidato)
-        if isinstance(valor, (int, float)) and not isinstance(valor, bool):
-            return float(valor)
+        if candidato in overrides:
+            return float(overrides[candidato])
     return None
+
+
+def _validar_overrides(overrides: dict[str, Any]) -> None:
+    """Rechaza claves que REBA no consume y valores no numéricos (bool no cuenta)."""
+
+    validas = [*MEDIDAS_REBA_UNICAS, *MEDIDAS_REBA_POR_LADO, *(f"{medida}_{lado}" for medida in MEDIDAS_REBA_POR_LADO for lado in ("L", "R"))]
+    for clave, valor in overrides.items():
+        if clave not in validas:
+            raise ValueError(f"contexto.json: override desconocido '{clave}'. Claves válidas: {', '.join(validas)}.")
+        if not isinstance(valor, (int, float)) or isinstance(valor, bool):
+            raise ValueError(f"contexto.json: el override '{clave}' debe ser un número, no {valor!r}.")
 
 
 def _mediciones_para_reba(salida: dict[str, Any], overrides: dict[str, Any]) -> dict[str, float | None]:
     """Aplica overrides a `salida`, completa medidas sin vista y devuelve las mediciones REBA."""
 
+    _validar_overrides(overrides)
     mediciones: dict[str, float | None] = {}
     for angulo in salida["angulos"]:
         override = _override(overrides, angulo["medida"], angulo.get("lado"))

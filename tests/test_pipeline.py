@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import pytest
 from PIL import Image
 
 from ergoai.cli import ejecutar_evaluar
@@ -101,3 +102,15 @@ def test_override_por_lado_tiene_prioridad_sobre_generico(tmp_path: Path) -> Non
     resultado = _evaluar(tmp_path, {**overrides, "codo_flexion": 80, "codo_flexion_R": 50})
     assert _angulo(resultado, "codo_flexion", "L")["valor_deg"] == 80.0
     assert _angulo(resultado, "codo_flexion", "R")["valor_deg"] == 50.0
+
+
+def test_override_con_clave_desconocida_se_rechaza(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="tronco_flexon") as error:
+        _evaluar(tmp_path, {"tronco_flexon": 30})
+    assert "tronco_flexion" in str(error.value) and "codo_flexion_R" in str(error.value)
+
+
+@pytest.mark.parametrize("valor", ["30", True])
+def test_override_no_numerico_se_rechaza(tmp_path: Path, valor) -> None:
+    with pytest.raises(ValueError, match="tronco_flexion"):
+        _evaluar(tmp_path, {"tronco_flexion": valor})
