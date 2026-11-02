@@ -11,7 +11,7 @@ from .config import Configuracion, cargar_configuracion
 from .io_imagenes import ImagenRGB, cargar_imagen
 from .modelos import Landmark, PoseResult, VistaPose, WorldLandmark
 from .pose import MediaPipeBackend, PoseBackend
-from .reba import calcular_reba
+from .reba import MEDIDAS_REBA_POR_LADO, MEDIDAS_REBA_UNICAS, calcular_reba, clave_reba
 
 VISTAS = ("frente", "costado", "aerea")
 EXTENSIONES_IMAGEN = (".jpg", ".jpeg", ".png", ".JPG", ".JPEG", ".PNG")
@@ -185,20 +185,39 @@ def ejecutar_angulos(caso: Path, raiz: Path, backend: PoseBackend | None = None)
     return ruta_salida
 
 
-def _mediciones_para_reba(angulos: list[dict[str, Any]], overrides: dict[str, Any]) -> dict[str, float | None]:
-    """Extrae medidas de la salida y registra overrides de especialista."""
+def _override(overrides: dict[str, Any], medida: str, lado: str | None) -> float | None:
+    """Valor del especialista; la clave con lado tiene prioridad sobre la genérica."""
+
+    for candidato in (clave_reba(medida, lado), medida):
+        valor = overrides.get(candidato)
+        if isinstance(valor, (int, float)) and not isinstance(valor, bool):
+            return float(valor)
+    return None
+
+
+def _mediciones_para_reba(salida: dict[str, Any], overrides: dict[str, Any]) -> dict[str, float | None]:
+    """Aplica overrides a `salida`, completa medidas sin vista y devuelve las mediciones REBA."""
 
     mediciones: dict[str, float | None] = {}
-    for angulo in angulos:
-        medida, lado = angulo["medida"], angulo.get("lado")
-        clave = f"{medida}_{lado}" if lado and medida != "cuello_flexion" else medida
-        candidatos = [clave, medida]
-        override = next((overrides[candidato] for candidato in candidatos if isinstance(overrides.get(candidato), (int, float)) and not isinstance(overrides[candidato], bool)), None)
+    for angulo in salida["angulos"]:
+        override = _override(overrides, angulo["medida"], angulo.get("lado"))
         if override is not None:
             angulo["valor_medido_deg"] = angulo.get("valor_deg")
-            angulo["valor_deg"] = float(override)
+            angulo["valor_deg"] = override
             angulo["fuente"] = "especialista"
-        mediciones[clave] = angulo.get("valor_deg")
+        mediciones[clave_reba(angulo["medida"], angulo.get("lado"))] = angulo.get("valor_deg")
+    esperadas = [(medida, None) for medida in MEDIDAS_REBA_UNICAS] + [(medida, lado) for medida in MEDIDAS_REBA_POR_LADO for lado in ("L", "R")]
+    for medida, lado in esperadas:
+        override = _override(overrides, medida, lado)
+        if clave_reba(medida, lado) in mediciones or override is None:
+            continue
+        sintetica = MedicionAngulo(medida, lado, override, None, "override_especialista", None, fuente="especialista").a_diccionario()
+        salida["angulos"].append({**sintetica, "valor_medido_deg": None})
+        mediciones[clave_reba(medida, lado)] = override
+    salida["pendientes_manuales"] = [
+        pendiente for pendiente in salida["pendientes_manuales"]
+        if mediciones.get(clave_reba(pendiente["medida"], pendiente.get("lado"))) is None
+    ]
     return mediciones
 
 
@@ -212,7 +231,7 @@ def ejecutar_evaluar(caso: Path, raiz: Path, backend: PoseBackend | None = None)
     overrides = contexto.get("overrides", {})
     if not isinstance(overrides, dict):
         raise ValueError("contexto.json: overrides debe ser un objeto.")
-    mediciones = _mediciones_para_reba(salida["angulos"], overrides)
+    mediciones = _mediciones_para_reba(salida, overrides)
     reba = calcular_reba(mediciones, contexto, configuracion.reba)
     for angulo in salida["angulos"]:
         lado = angulo.get("lado")
