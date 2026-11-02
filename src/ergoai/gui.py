@@ -147,7 +147,8 @@ class AplicacionErgoAI:
             datos = json.loads(salida.read_text(encoding="utf-8"))
             self.ventana.after(0, lambda: self._mostrar_resultado(datos, salida.parent))
         except Exception as exc:  # La interfaz debe comunicar errores del backend sin cerrarse.
-            self.ventana.after(0, lambda: self._mostrar_error(str(exc)))
+            mensaje = str(exc)  # Python borra `exc` al salir del except; Tk ejecuta la lambda después.
+            self.ventana.after(0, lambda: self._mostrar_error(mensaje))
 
     def _mostrar_error(self, error: str) -> None:
         self.boton_evaluar.configure(state="normal")
